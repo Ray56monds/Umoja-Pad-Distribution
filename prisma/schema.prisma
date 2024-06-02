@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      UserRole
+
+  @@index([username], name: "username_index")
+}
+
+model School {
+  id                 Int                 @id @default(autoincrement())
+  name               String              @unique
+  location           String
+  address            String
+  phone              String              @db.VarChar(20)
+  beneficiaries      Beneficiary[]
+  ngos               NGO[]
+  distributionEvents DistributionEvent[]
+
+  @@index([name], name: "school_name_index")
+}
+
+model Beneficiary {
+  id     Int    @id @default(autoincrement())
+  name   String
+  age    Int
+  needs  String
+  school School @relation(fields: [schoolId], references: [id])
+
+  schoolId Int
+
+  @@index([schoolId], name: "beneficiary_school_id_index")
+}
+
+model InventoryItem {
+  id                Int               @id @default(autoincrement())
+  name              String
+  description       String
+  quantity          Int
+  distributionEvent DistributionEvent @relation(fields: [distributionEventId], references: [id])
+
+  distributionEventId Int
+
+  @@index([distributionEventId], name: "inventory_item_distribution_event_id_index")
+}
+
+model NGO {
+  id                 Int                 @id @default(autoincrement())
+  name               String
+  location           String
+  address            String
+  phone              String              @db.VarChar(20)
+  contact            String
+  email              String              @db.VarChar(100)
+  school             School              @relation(fields: [schoolId], references: [id])
+  distributionEvents DistributionEvent[]
+
+  schoolId Int
+
+  @@index([schoolId], name: "ngo_school_id_index")
+}
+
+model DistributionEvent {
+  id             Int             @id @default(autoincrement())
+  date           DateTime
+  location       String
+  ngo            NGO             @relation(fields: [ngoId], references: [id])
+  inventoryItems InventoryItem[]
+  school         School          @relation(fields: [schoolId], references: [id])
+
+  ngoId    Int
+  schoolId Int
+
+  @@index([ngoId], name: "distribution_event_ngo_id_index")
+  @@index([schoolId], name: "distribution_event_school_id_index")
+  @@map("distributions")
+}
+
+enum UserRole {
+  ADMIN
+  VOLUNTEER
+  BENEFICIARY
+}
